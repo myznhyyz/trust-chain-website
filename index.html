@@ -253,14 +253,16 @@ nav.pill{
 .hud-icon-btn:hover{background:rgba(255,255,255,.18);}
 .hud-icon-btn:active{transform:scale(.94);}
 
-/* Left Vertical Zoom Slider Rail */
+/* Left Vertical Zoom Slider Rail (Mặc định ẩn, chỉ hiện trong Hero) */
 .left-zoom-rail{
-  position:fixed;
+  position:absolute; /* Đổi thành absolute để cuộn theo trang */
   left: 20px;
   top:50%;
-  transform:translateY(-50%);
+  transform:translateY(-50%) translateX(-20px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
   z-index:30;
-  pointer-events:auto;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -273,7 +275,42 @@ nav.pill{
   padding:10px 7px;
   box-shadow:0 12px 32px rgba(0,0,0,.35);
   user-select:none;
+  transition: opacity .3s ease, transform .3s ease, visibility .3s;
 }
+.left-zoom-rail.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform:translateY(-50%) translateX(0);
+}
+
+/* Nút Ẩn/Hiện Thanh Zoom */
+#zoom-toggle {
+  position:fixed;
+  bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  left: 24px;
+  z-index:100;
+  width: 48px;
+  height: 48px;
+  border-radius:50%;
+  background:rgba(30,30,30,.85);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.2);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  transition:transform .3s ease,background .3s ease;
+  box-shadow:0 8px 30px -12px rgba(0,0,0,.4);
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+#zoom-toggle:hover { transform:scale(1.1); background:rgba(50,50,50,.9); }
+#zoom-toggle:active { transform:scale(.95); }
+#zoom-toggle svg { width:20px; height:20px; fill:currentColor; }
+
 .v-zoom-track{ position:relative; width:24px; height:148px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; }
 .v-zoom-line{ width:3px; height:100%; background:rgba(255,255,255,.18); border-radius:99px; position:relative; overflow:hidden; }
 .v-zoom-fill{ position:absolute; bottom:0; left:0; right:0; height:50%; background:#FFFFFF; border-radius:99px; }
@@ -282,12 +319,12 @@ nav.pill{
 .v-zoom-lbl{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; color:#8A8D98; writing-mode:vertical-rl; transform:rotate(180deg); margin:2px 0; }
 
 @media(max-width:1180px){
-  #hero .wrap{padding-left: 64px;}
+  #hero .wrap{padding-left: 24px;} /* Không cần nhường chỗ nữa vì thanh zoom đã ẩn mặc định */
 }
 @media(max-width:520px){
-  .left-zoom-rail{left: 10px; padding:8px 5px; gap:8px;}
+  .left-zoom-rail{left: 14px; padding:8px 5px; gap:8px;}
   .v-zoom-track{height:110px; width:20px;}
-  #hero .wrap{padding-left: 52px;}
+  #zoom-toggle { bottom: calc(80px + env(safe-area-inset-bottom,0px)); left: 14px; width: 44px; height: 44px; }
 }
 
 html.js .hi{opacity:0; transform:translateY(34px); transition:opacity .9s ease var(--d,0s), transform .9s cubic-bezier(.2,.7,.2,1) var(--d,0s);}
@@ -374,7 +411,8 @@ body.legal-view { background:#EFEDE8; }
 body.legal-view nav.pill{ background:rgba(255,255,255,.95); }
 body.legal-view #hero-bg,
 body.legal-view #stage,
-body.legal-view #prog {
+body.legal-view #prog,
+body.legal-view #zoom-toggle {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -382,7 +420,8 @@ body.legal-view #prog {
 }
 body:not(.legal-view) #hero-bg,
 body:not(.legal-view) #stage,
-body:not(.legal-view) #prog {
+body:not(.legal-view) #prog,
+body:not(.legal-view) #zoom-toggle {
   transition: opacity .35s ease, visibility 0s 0s;
 }
 
@@ -503,7 +542,7 @@ body:not(.legal-view) #prog {
     </div>
   </div>
 
-  <!-- Vertical Left Zoom Control Bar -->
+  <!-- Vertical Left Zoom Control Bar (Mặc định ẩn) -->
   <div class="left-zoom-rail hi" style="--d:.4s" aria-label="Thanh kéo phóng to thu nhỏ 3D">
     <button type="button" class="hud-icon-btn" id="zoom-in-btn" title="Phóng to" aria-label="Phóng to">+</button>
     <div class="v-zoom-track" id="v-zoom-track" role="slider" tabindex="0" aria-label="Kéo lên xuống để Zoom" aria-valuemin="5" aria-valuemax="75" aria-valuenow="36">
@@ -694,6 +733,11 @@ body:not(.legal-view) #prog {
   </span>
 </div></footer>
 
+<!-- Nút Ẩn/Hiện Thanh Zoom (Góc trái dưới) -->
+<button id="zoom-toggle" aria-label="Bật/tắt thanh Zoom">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+</button>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
@@ -737,6 +781,15 @@ body:not(.legal-view) #prog {
   document.addEventListener('click', function(e){
     if(e.target.closest('button, a')) playTone(480, 0.08, 0.025);
   });
+
+  /* Toggle Zoom Rail */
+  var zoomToggle = document.getElementById('zoom-toggle');
+  var zoomRail = document.querySelector('.left-zoom-rail');
+  if(zoomToggle && zoomRail){
+    zoomToggle.addEventListener('click', function(){
+      zoomRail.classList.toggle('show');
+    });
+  }
 
   /* Fee Calculator */
   var dealInput = document.getElementById('deal-amount');

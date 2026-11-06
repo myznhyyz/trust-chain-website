@@ -1,28 +1,22 @@
 /* ==========================================================
    TRUST CHAIN — SHARED MUSIC PLAYER
-   - Autoplay muted → unmute on first gesture
-   - Thanh âm lượng: 0 → 200 (mặc định 100)
-   - Chuyển bài tuần tự, mobile-friendly
+   - Tự động đọc danh sách bài từ file music/playlist.txt
+   - Tự phát, thanh âm lượng, mobile-friendly
    ========================================================== */
 (function(){
   'use strict';
 
-  var songs = [
-    { src: 'music/君との夏はソーダ味.mp3', title: '君との夏はソーダ味', artist: 'Unknown' },
-    { src: 'music/サブカルに恋して.mp3',   title: 'サブカルに恋して',   artist: 'Unknown' },
-    { src: 'music/だらけモードON.mp3',    title: 'だらけモードON',    artist: 'Unknown' }
-  ];
-
-  if(!songs.length) return;
+  /* Đường dẫn tới file chứa danh sách nhạc */
+  var PLAYLIST_URL = 'music/playlist.txt';
 
   var VOL_MIN = 0, VOL_MAX = 200, VOL_DEFAULT = 100;
 
-  var KEY = 'tc_music_v2';
+  var KEY = 'tc_music_v3';
   var saved = {};
   try { saved = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch(e){ saved = {}; }
 
-  var currentIndex = (typeof saved.index === 'number' && saved.index >= 0 && saved.index < songs.length)
-                     ? saved.index : 0;
+  var songs = [];
+  var currentIndex = 0;
   var isLoop      = !!saved.loop;
   var isPlaying   = false;
   var pendingTime = (typeof saved.time === 'number' && saved.time > 0) ? saved.time : 0;
@@ -124,21 +118,54 @@
   </div>
   `;
 
-  function init(){
+  /* 1. Khởi tạo UI */
+  function initUI(){
     var st = document.createElement('style');
     st.textContent = CSS;
     document.head.appendChild(st);
     document.body.insertAdjacentHTML('beforeend', HTML);
-    setup();
   }
 
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  /* 2. Tải danh sách bài hát từ file txt */
+  function loadPlaylist(callback){
+    fetch(PLAYLIST_URL)
+      .then(function(res){
+        if(!res.ok) throw new Error('Không tìm thấy ' + PLAYLIST_URL);
+        return res.text();
+      })
+      .then(function(text){
+        var lines = text.split('\n');
+        var loadedSongs = [];
+        for(var i=0; i<lines.length; i++){
+          var name = lines[i].trim();
+          if(name && name.toLowerCase().endsWith('.mp3')){
+            /* Tự động lấy tên file bỏ đuôi .mp3 làm tiêu đề */
+            var title = name.replace(/\.mp3$/i, '');
+            loadedSongs.push({
+              src: 'music/' + name,
+              title: title,
+              artist: 'Trust Chain Music'
+            });
+          }
+        }
+        songs = loadedSongs;
+        
+        /* Khôi phục bài đang phát dở nếu có */
+        if (typeof saved.index === 'number' && saved.index >= 0 && saved.index < songs.length) {
+          currentIndex = saved.index;
+        } else {
+          currentIndex = 0;
+        }
+        
+        if(songs.length > 0) callback();
+      })
+      .catch(function(err){
+        console.error('Lỗi tải danh sách nhạc:', err);
+      });
   }
 
-  function setup(){
+  /* 3. Kích hoạt Player */
+  function setupPlayer(){
     var audio = new Audio();
     audio.volume = savedVolume200 / VOL_MAX;
     audio.preload = 'auto';
@@ -367,7 +394,7 @@
     }
 
     function attemptPlay(){
-      if (isPlaying) return;
+      if (isPlaying || songs.length === 0) return;
       audio.muted = false;
       var p = audio.play();
       if (!p || !p.then) return;
@@ -417,4 +444,16 @@
       }
     });
   }
+
+  /* Bắt đầu chạy */
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      initUI();
+      loadPlaylist(setupPlayer);
+    });
+  } else {
+    initUI();
+    loadPlaylist(setupPlayer);
+  }
+
 })();

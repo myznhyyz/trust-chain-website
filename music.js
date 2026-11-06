@@ -1,6 +1,6 @@
 /* ==========================================================
    TRUST CHAIN — SHARED MUSIC PLAYER
-   - Sửa thanh thời lượng bo tròn hoàn hảo
+   - Khung nhạc tự động mở sẵn (class "show")
    ========================================================== */
 (function(){
   'use strict';
@@ -48,14 +48,12 @@
   .mp-visualizer span:nth-child(4){height:20px;animation-delay:.1s}
   @keyframes mp-vis{0%{height:4px}100%{height:20px}}
   
-  /* THANH TIẾN TRÌNH ĐÃ BO TRÒN HOÀN HẢO */
   .mp-progress-wrap{display:flex;align-items:center;gap:10px;font-size:11px;color:#B0B0B0;margin-bottom:16px;font-variant-numeric:tabular-nums}
   .mp-progress-bar{flex:1;height:6px;background:rgba(255,255,255,.15);border-radius:99px;position:relative;cursor:pointer;overflow:hidden}
   .mp-progress{height:100%;background:#fff;border-radius:99px;width:0%;position:relative;transition:width .1s linear;pointer-events:none}
   .mp-progress::after{content:'';position:absolute;right:0;top:0;bottom:0;width:12px;background:linear-gradient(to right, transparent, rgba(255,255,255,0.8));border-radius:99px;opacity:0;transition:opacity .2s}
   .mp-progress-bar:hover .mp-progress::after{opacity:1}
-
-  /* THANH ÂM LƯỢNG BO TRÒN */
+  
   .mp-volume-row{max-height:0;overflow:hidden;opacity:0;display:flex;align-items:center;gap:10px;font-size:11px;color:#B0B0B0;margin:0;transition:max-height .35s ease,opacity .25s ease,margin .35s ease;font-variant-numeric:tabular-nums}
   #music-player.volume-open .mp-volume-row{max-height:40px;opacity:1;margin-bottom:16px}
   .mp-volume-row svg{width:14px;height:14px;fill:#B0B0B0;flex-shrink:0}
@@ -86,7 +84,7 @@
   <button id="music-toggle" aria-label="Bật/tắt trình phát nhạc">
     <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
   </button>
-  <div id="music-player" aria-label="Trình phát nhạc">
+  <div id="music-player" class="show" aria-label="Trình phát nhạc">
     <div class="mp-header">
       <div style="width:24px;flex-shrink:0"></div>
       <div class="mp-title-wrap">
@@ -377,7 +375,6 @@
       startBtn.addEventListener('click', function() {
         hasStarted = true;
         playSong();
-        player.classList.add('show');
       });
     } else {
       var unlockAudio = function(e) {
@@ -396,7 +393,7 @@
     }
 
     if (wantResume && document.getElementById('loader') && document.getElementById('loader').classList.contains('done')) {
-        playSong();
+        playSound();
     }
   }
 

@@ -39,7 +39,16 @@ body{
   overflow-x:hidden;
   position:relative;
   -webkit-font-smoothing:antialiased;
+  /* CHỐNG BÔI ĐEN CHỮ TOÀN TRANG */
+  user-select: none;
+  -webkit-user-select: none;
 }
+/* Cho phép bôi đen ở những chỗ cần nhập liệu */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 h1,h2,h3{
   font-family:'Inter Tight',sans-serif;
   margin:0;
@@ -241,6 +250,8 @@ nav.pill{
   padding:8px 12px;
   color:#D0D2D9;
   font-size:12px;
+  /* Không bị bôi đen chữ khi kéo */
+  user-select: none;
 }
 .solar-planets{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
 .solar-planets span.lbl{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:#7E818C; margin-right:6px; }
@@ -333,7 +344,6 @@ body.legal-view .left-zoom-rail {
 @media(max-width:520px){
   .left-zoom-rail{left: 14px; padding:8px 5px; gap:8px;}
   .v-zoom-track{height:110px; width:20px;}
-  /* Đẩy nút zoom lên trên thanh bar mobile */
   #zoom-toggle { bottom: calc(80px + env(safe-area-inset-bottom,0px)); left: 14px; width: 44px; height: 44px; }
 }
 
@@ -1619,11 +1629,17 @@ body:not(.legal-view) #prog {
     var prevX = 0, prevY = 0;
     var pinchDist = 0;
 
-    el.addEventListener('mousedown', function(e){
+    // ĐÃ SỬA: Kéo 3D từ BẤT KỲ ĐÂU trên màn hình (trừ khi bấm trúng nút)
+    document.addEventListener('mousedown', function(e){
+      // Bỏ qua nếu click vào thẻ tương tác (nút, link, thanh zoom, input)
+      if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.v-zoom-track') || e.target.closest('input')) return;
+      
       isDragging = true;
       prevX = e.clientX;
       prevY = e.clientY;
+      document.body.style.cursor = 'grabbing';
     });
+
     addEventListener('mousemove', function(e){
       if(!isDragging) return;
       var dx = e.clientX - prevX;
@@ -1633,9 +1649,16 @@ body:not(.legal-view) #prog {
       targetTheta -= dx * 0.0075;
       targetPhi = Math.max(0.25, Math.min(Math.PI - 0.25, targetPhi - dy * 0.0075));
     }, {passive:true});
-    addEventListener('mouseup', function(){ isDragging = false; });
+    
+    addEventListener('mouseup', function(){ 
+      isDragging = false; 
+      document.body.style.cursor = ''; 
+    });
 
-    el.addEventListener('touchstart', function(e){
+    // Touch events tương tự
+    document.addEventListener('touchstart', function(e){
+      if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.v-zoom-track') || e.target.closest('input')) return;
+
       if(e.touches.length === 1){
         isDragging = true;
         prevX = e.touches[0].clientX;
@@ -1648,7 +1671,7 @@ body:not(.legal-view) #prog {
       }
     }, {passive:true});
 
-    el.addEventListener('touchmove', function(e){
+    document.addEventListener('touchmove', function(e){
       if(e.touches.length === 1 && isDragging){
         var dx = e.touches[0].clientX - prevX;
         var dy = e.touches[0].clientY - prevY;
@@ -1666,7 +1689,7 @@ body:not(.legal-view) #prog {
       }
     }, {passive:true});
 
-    el.addEventListener('touchend', function(){ isDragging = false; pinchDist = 0; });
+    document.addEventListener('touchend', function(){ isDragging = false; pinchDist = 0; });
 
     var cw = 0, ch = 0;
     function fit(){

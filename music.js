@@ -1,17 +1,15 @@
 /* ==========================================================
    TRUST CHAIN — SHARED MUSIC PLAYER
-   - Tự động đọc danh sách bài từ file music/playlist.txt
-   - Tự phát, thanh âm lượng, mobile-friendly
+   - Tự động chờ nút "Bắt đầu" (#loader-start-btn) để phát nhạc
+   - Sửa giao diện thanh tiến trình
    ========================================================== */
 (function(){
   'use strict';
 
-  /* Đường dẫn tới file chứa danh sách nhạc */
   var PLAYLIST_URL = 'music/playlist.txt';
-
   var VOL_MIN = 0, VOL_MAX = 200, VOL_DEFAULT = 100;
-
-  var KEY = 'tc_music_v3';
+  var KEY = 'tc_music_v5';
+  
   var saved = {};
   try { saved = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch(e){ saved = {}; }
 
@@ -19,6 +17,10 @@
   var currentIndex = 0;
   var isLoop      = !!saved.loop;
   var isPlaying   = false;
+  
+  // Biến này để đánh dấu người dùng đã bấm "Bắt đầu" chưa
+  var hasStarted = false; 
+  
   var pendingTime = (typeof saved.time === 'number' && saved.time > 0) ? saved.time : 0;
   var wantResume  = saved.playing !== false;
 
@@ -48,19 +50,22 @@
   .mp-visualizer span:nth-child(3){height:12px;animation-delay:.4s}
   .mp-visualizer span:nth-child(4){height:20px;animation-delay:.1s}
   @keyframes mp-vis{0%{height:4px}100%{height:20px}}
+  
+  /* THANH TIẾN TRÌNH ĐÃ ĐƯỢC FIX */
   .mp-progress-wrap{display:flex;align-items:center;gap:10px;font-size:11px;color:#B0B0B0;margin-bottom:16px;font-variant-numeric:tabular-nums}
-  .mp-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;position:relative;cursor:pointer;padding:8px 0;margin:-8px 0;box-sizing:content-box}
-  .mp-progress{height:4px;background:#fff;border-radius:2px;width:0%;position:relative;transition:width .1s linear;pointer-events:none}
-  .mp-progress::after{content:'';position:absolute;right:-5px;top:-4px;width:12px;height:12px;background:#fff;border-radius:50%;opacity:0;transition:opacity .2s}
+  .mp-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;position:relative;cursor:pointer}
+  .mp-progress{height:100%;background:#fff;border-radius:2px;width:0%;position:relative;transition:width .1s linear;pointer-events:none}
+  .mp-progress::after{content:'';position:absolute;right:-4px;top:-3px;width:10px;height:10px;background:#fff;border-radius:50%;opacity:0;transition:opacity .2s}
   .mp-progress-bar:hover .mp-progress::after{opacity:1}
+  
   .mp-volume-row{max-height:0;overflow:hidden;opacity:0;display:flex;align-items:center;gap:10px;font-size:11px;color:#B0B0B0;margin:0;transition:max-height .35s ease,opacity .25s ease,margin .35s ease;font-variant-numeric:tabular-nums}
   #music-player.volume-open .mp-volume-row{max-height:40px;opacity:1;margin-bottom:16px}
   .mp-volume-row svg{width:14px;height:14px;fill:#B0B0B0;flex-shrink:0}
-  .mp-volume-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;position:relative;cursor:pointer;padding:8px 0;margin:-8px 0;box-sizing:content-box}
-  .mp-volume-fill{height:4px;background:#fff;border-radius:2px;width:50%;position:relative;transition:width .1s linear;pointer-events:none}
-  .mp-volume-fill::after{content:'';position:absolute;right:-5px;top:-4px;width:12px;height:12px;background:#fff;border-radius:50%;opacity:0;transition:opacity .2s}
+  .mp-volume-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;position:relative;cursor:pointer}
+  .mp-volume-fill{height:100%;background:#fff;border-radius:2px;width:50%;position:relative;transition:width .1s linear;pointer-events:none}
+  .mp-volume-fill::after{content:'';position:absolute;right:-4px;top:-3px;width:10px;height:10px;background:#fff;border-radius:50%;opacity:0;transition:opacity .2s}
   .mp-volume-bar:hover .mp-volume-fill::after{opacity:1}
-  .mp-volume-val{min-width:32px;text-align:right}
+  
   .mp-controls{display:flex;justify-content:space-between;align-items:center;padding:0 8px}
   .mp-btn{background:none;border:none;color:#fff;cursor:pointer;padding:8px;display:flex;align-items:center;justify-content:center;opacity:.7;transition:opacity .2s,transform .2s;-webkit-tap-highlight-color:transparent}
   .mp-btn:hover{opacity:1;transform:scale(1.1)}
@@ -118,7 +123,6 @@
   </div>
   `;
 
-  /* 1. Khởi tạo UI */
   function initUI(){
     var st = document.createElement('style');
     st.textContent = CSS;
@@ -126,11 +130,10 @@
     document.body.insertAdjacentHTML('beforeend', HTML);
   }
 
-  /* 2. Tải danh sách bài hát từ file txt */
   function loadPlaylist(callback){
     fetch(PLAYLIST_URL)
       .then(function(res){
-        if(!res.ok) throw new Error('Không tìm thấy ' + PLAYLIST_URL);
+        if(!res.ok) throw new Error('Lỗi 404: Không tìm thấy file ' + PLAYLIST_URL);
         return res.text();
       })
       .then(function(text){
@@ -138,9 +141,8 @@
         var loadedSongs = [];
         for(var i=0; i<lines.length; i++){
           var name = lines[i].trim();
-          if(name && name.toLowerCase().endsWith('.mp3')){
-            /* Tự động lấy tên file bỏ đuôi .mp3 làm tiêu đề */
-            var title = name.replace(/\.mp3$/i, '');
+          if(name && (name.toLowerCase().endsWith('.mp3') || name.toLowerCase().endsWith('.m4a'))){
+            var title = name.replace(/\.(mp3|m4a)$/i, '');
             loadedSongs.push({
               src: 'music/' + name,
               title: title,
@@ -150,7 +152,6 @@
         }
         songs = loadedSongs;
         
-        /* Khôi phục bài đang phát dở nếu có */
         if (typeof saved.index === 'number' && saved.index >= 0 && saved.index < songs.length) {
           currentIndex = saved.index;
         } else {
@@ -164,7 +165,6 @@
       });
   }
 
-  /* 3. Kích hoạt Player */
   function setupPlayer(){
     var audio = new Audio();
     audio.volume = savedVolume200 / VOL_MAX;
@@ -229,6 +229,7 @@
 
     function loadSong(i){
       var s = songs[i];
+      if (!s) return;
       audio.src = encodeURI(s.src);
       titleEl.textContent = s.title;
       artistEl.textContent = s.artist;
@@ -239,17 +240,18 @@
       iconPause.style.display = isPlaying ? 'block' : 'none';
     }
 
+    // Hàm phát nhạc
     function playSong(){
-      audio.muted = false;
-      var p = audio.play();
-      if(!p || !p.then) return;
-      p.then(function(){
+      if (songs.length === 0) return;
+      
+      audio.play().then(function(){
         isPlaying = true;
         updatePlayIcon();
         updateVolumeUI();
         visualizer.style.opacity = '1';
         saveState();
-      }).catch(function(){
+      }).catch(function(err){
+        console.warn('Chờ tương tác...', err);
         isPlaying = false;
         updatePlayIcon();
       });
@@ -266,13 +268,15 @@
     function nextSong(){
       currentIndex = (currentIndex + 1) % songs.length;
       loadSong(currentIndex);
-      if(isPlaying) playSong(); else { updatePlayIcon(); saveState(); }
+      if(isPlaying || hasStarted) playSong(); 
+      else { updatePlayIcon(); saveState(); }
     }
 
     function prevSong(){
       currentIndex = (currentIndex - 1 + songs.length) % songs.length;
       loadSong(currentIndex);
-      if(isPlaying) playSong(); else { updatePlayIcon(); saveState(); }
+      if(isPlaying || hasStarted) playSong(); 
+      else { updatePlayIcon(); saveState(); }
     }
 
     function fmt(sec){
@@ -281,8 +285,12 @@
       return m + ':' + (s<10?'0':'') + s;
     }
 
+    // Sự kiện giao diện
     toggleBtn.addEventListener('click', function(){ player.classList.toggle('show'); });
-    playPauseBtn.addEventListener('click', function(){ if(isPlaying) pauseSong(); else playSong(); });
+    playPauseBtn.addEventListener('click', function(){ 
+      hasStarted = true;
+      if(isPlaying) pauseSong(); else playSong(); 
+    });
     nextBtn.addEventListener('click', nextSong);
     prevBtn.addEventListener('click', prevSong);
 
@@ -367,85 +375,42 @@
     updatePlayIcon();
     updateVolumeUI();
 
-    var GESTURE_EVENTS = ['click','touchstart','keydown','pointerdown','touchend'];
-
-    function armUnmute(){
-      function unmute(){
-        if (!audio.muted) return;
-        audio.muted = false;
-        updateVolumeUI();
-        saveState();
-        GESTURE_EVENTS.forEach(function(ev){ document.removeEventListener(ev, unmute); });
-      }
-      GESTURE_EVENTS.forEach(function(ev){
-        document.addEventListener(ev, unmute, { passive: true });
+    /* =========================================================
+       LOGIC MỚI: CHỜ NÚT "BẮT ĐẦU" TRÊN LOADER
+       ========================================================= */
+    
+    // Tìm nút "Bắt đầu" trong file HTML của bạn
+    var startBtn = document.getElementById('loader-start-btn'); 
+    
+    if (startBtn) {
+      startBtn.addEventListener('click', function() {
+        hasStarted = true;
+        playSong();
+        player.classList.add('show'); // Tự động mở khung nhạc lên
       });
-    }
-
-    function armRetryPlay(){
-      function retry(){
-        GESTURE_EVENTS.forEach(function(ev){ document.removeEventListener(ev, retry); });
-        if (isPlaying) return;
-        attemptPlay();
-      }
-      GESTURE_EVENTS.forEach(function(ev){
-        document.addEventListener(ev, retry, { passive: true });
-      });
-    }
-
-    function attemptPlay(){
-      if (isPlaying || songs.length === 0) return;
-      audio.muted = false;
-      var p = audio.play();
-      if (!p || !p.then) return;
-      p.then(function(){
-        isPlaying = true;
-        updatePlayIcon();
-        updateVolumeUI();
-        visualizer.style.opacity = '1';
-        saveState();
-      }).catch(function(){
-        audio.muted = true;
-        var pp = audio.play();
-        if (!pp || !pp.then) return;
-        pp.then(function(){
-          isPlaying = true;
-          updatePlayIcon();
-          updateVolumeUI();
-          visualizer.style.opacity = '1';
-          saveState();
-          armUnmute();
-        }).catch(function(){
-          isPlaying = false;
-          updatePlayIcon();
-          armRetryPlay();
-        });
-      });
-    }
-
-    attemptPlay();
-    setTimeout(attemptPlay, 600);
-    setTimeout(attemptPlay, 1800);
-    setTimeout(attemptPlay, 3200);
-
-    var loader = document.getElementById('loader');
-    if (loader){
-      var mo = new MutationObserver(function(){
-        if (loader.classList.contains('done')){
-          setTimeout(attemptPlay, 100);
+    } else {
+      // Nếu bạn không xài nút Bắt đầu, nhạc sẽ chờ click đầu tiên trên web
+      var unlockAudio = function(e) {
+        if (e.target.closest && e.target.closest('#music-player')) return;
+        if (!hasStarted) {
+          hasStarted = true;
+          playSong();
+          ['click','touchstart','keydown'].forEach(function(ev){
+            document.removeEventListener(ev, unlockAudio);
+          });
         }
+      };
+      ['click','touchstart','keydown'].forEach(function(ev){
+        document.addEventListener(ev, unlockAudio, { passive: true });
       });
-      mo.observe(loader, { attributes: true, attributeFilter: ['class'] });
     }
 
-    document.addEventListener('visibilitychange', function(){
-      if (document.visibilityState === 'visible' && !isPlaying && wantResume){
-        attemptPlay();
-      }
-    });
+    // Nếu trước đó bạn đã bấm Bắt đầu rồi (chuyển trang), tự động phát lại
+    if (wantResume && document.getElementById('loader') && document.getElementById('loader').classList.contains('done')) {
+        playSong();
+    }
   }
 
-  /* Bắt đầu chạy */
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', function(){
       initUI();

@@ -1,14 +1,13 @@
 /* ==========================================================
    TRUST CHAIN — SHARED MUSIC PLAYER
-   - Tự động chờ nút "Bắt đầu" (#loader-start-btn) để phát nhạc
-   - Sửa giao diện thanh tiến trình
+   - Sửa thanh thời lượng bo tròn hoàn hảo
    ========================================================== */
 (function(){
   'use strict';
 
   var PLAYLIST_URL = 'music/playlist.txt';
   var VOL_MIN = 0, VOL_MAX = 200, VOL_DEFAULT = 100;
-  var KEY = 'tc_music_v5';
+  var KEY = 'tc_music_v6';
   
   var saved = {};
   try { saved = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch(e){ saved = {}; }
@@ -17,9 +16,7 @@
   var currentIndex = 0;
   var isLoop      = !!saved.loop;
   var isPlaying   = false;
-  
-  // Biến này để đánh dấu người dùng đã bấm "Bắt đầu" chưa
-  var hasStarted = false; 
+  var hasStarted  = false; 
   
   var pendingTime = (typeof saved.time === 'number' && saved.time > 0) ? saved.time : 0;
   var wantResume  = saved.playing !== false;
@@ -51,20 +48,20 @@
   .mp-visualizer span:nth-child(4){height:20px;animation-delay:.1s}
   @keyframes mp-vis{0%{height:4px}100%{height:20px}}
   
-  /* THANH TIẾN TRÌNH ĐÃ ĐƯỢC FIX */
+  /* THANH TIẾN TRÌNH ĐÃ BO TRÒN HOÀN HẢO */
   .mp-progress-wrap{display:flex;align-items:center;gap:10px;font-size:11px;color:#B0B0B0;margin-bottom:16px;font-variant-numeric:tabular-nums}
-  .mp-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;position:relative;cursor:pointer}
-  .mp-progress{height:100%;background:#fff;border-radius:2px;width:0%;position:relative;transition:width .1s linear;pointer-events:none}
-  .mp-progress::after{content:'';position:absolute;right:-4px;top:-3px;width:10px;height:10px;background:#fff;border-radius:50%;opacity:0;transition:opacity .2s}
+  .mp-progress-bar{flex:1;height:6px;background:rgba(255,255,255,.15);border-radius:99px;position:relative;cursor:pointer;overflow:hidden}
+  .mp-progress{height:100%;background:#fff;border-radius:99px;width:0%;position:relative;transition:width .1s linear;pointer-events:none}
+  .mp-progress::after{content:'';position:absolute;right:0;top:0;bottom:0;width:12px;background:linear-gradient(to right, transparent, rgba(255,255,255,0.8));border-radius:99px;opacity:0;transition:opacity .2s}
   .mp-progress-bar:hover .mp-progress::after{opacity:1}
-  
+
+  /* THANH ÂM LƯỢNG BO TRÒN */
   .mp-volume-row{max-height:0;overflow:hidden;opacity:0;display:flex;align-items:center;gap:10px;font-size:11px;color:#B0B0B0;margin:0;transition:max-height .35s ease,opacity .25s ease,margin .35s ease;font-variant-numeric:tabular-nums}
   #music-player.volume-open .mp-volume-row{max-height:40px;opacity:1;margin-bottom:16px}
   .mp-volume-row svg{width:14px;height:14px;fill:#B0B0B0;flex-shrink:0}
-  .mp-volume-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;position:relative;cursor:pointer}
-  .mp-volume-fill{height:100%;background:#fff;border-radius:2px;width:50%;position:relative;transition:width .1s linear;pointer-events:none}
-  .mp-volume-fill::after{content:'';position:absolute;right:-4px;top:-3px;width:10px;height:10px;background:#fff;border-radius:50%;opacity:0;transition:opacity .2s}
-  .mp-volume-bar:hover .mp-volume-fill::after{opacity:1}
+  .mp-volume-bar{flex:1;height:6px;background:rgba(255,255,255,.15);border-radius:99px;position:relative;cursor:pointer;overflow:hidden}
+  .mp-volume-fill{height:100%;background:#fff;border-radius:99px;width:50%;position:relative;transition:width .1s linear;pointer-events:none}
+  .mp-volume-val{min-width:32px;text-align:right}
   
   .mp-controls{display:flex;justify-content:space-between;align-items:center;padding:0 8px}
   .mp-btn{background:none;border:none;color:#fff;cursor:pointer;padding:8px;display:flex;align-items:center;justify-content:center;opacity:.7;transition:opacity .2s,transform .2s;-webkit-tap-highlight-color:transparent}
@@ -73,6 +70,7 @@
   .mp-btn svg{width:20px;height:20px;fill:currentColor}
   .mp-btn.play-pause svg{width:28px;height:28px}
   .mp-btn.active{opacity:1;filter:drop-shadow(0 0 6px rgba(255,255,255,.6))}
+  
   @media(max-width:520px){
     #music-toggle{bottom:calc(80px + env(safe-area-inset-bottom,0px));right:14px;width:44px;height:44px}
     #music-player{width:calc(100vw - 28px);right:14px;bottom:calc(136px + env(safe-area-inset-bottom,0px));padding:14px;border-radius:20px}
@@ -240,7 +238,6 @@
       iconPause.style.display = isPlaying ? 'block' : 'none';
     }
 
-    // Hàm phát nhạc
     function playSong(){
       if (songs.length === 0) return;
       
@@ -285,7 +282,6 @@
       return m + ':' + (s<10?'0':'') + s;
     }
 
-    // Sự kiện giao diện
     toggleBtn.addEventListener('click', function(){ player.classList.toggle('show'); });
     playPauseBtn.addEventListener('click', function(){ 
       hasStarted = true;
@@ -375,21 +371,15 @@
     updatePlayIcon();
     updateVolumeUI();
 
-    /* =========================================================
-       LOGIC MỚI: CHỜ NÚT "BẮT ĐẦU" TRÊN LOADER
-       ========================================================= */
-    
-    // Tìm nút "Bắt đầu" trong file HTML của bạn
     var startBtn = document.getElementById('loader-start-btn'); 
     
     if (startBtn) {
       startBtn.addEventListener('click', function() {
         hasStarted = true;
         playSong();
-        player.classList.add('show'); // Tự động mở khung nhạc lên
+        player.classList.add('show');
       });
     } else {
-      // Nếu bạn không xài nút Bắt đầu, nhạc sẽ chờ click đầu tiên trên web
       var unlockAudio = function(e) {
         if (e.target.closest && e.target.closest('#music-player')) return;
         if (!hasStarted) {
@@ -405,7 +395,6 @@
       });
     }
 
-    // Nếu trước đó bạn đã bấm Bắt đầu rồi (chuyển trang), tự động phát lại
     if (wantResume && document.getElementById('loader') && document.getElementById('loader').classList.contains('done')) {
         playSong();
     }

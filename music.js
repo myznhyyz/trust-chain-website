@@ -1,6 +1,6 @@
 /* ==========================================================
    TRUST CHAIN — SHARED MUSIC PLAYER
-   - Khung nhạc tự động mở sẵn (class "show")
+   - Mặc định hộp nhạc ẩn, chỉ mở khi bấm nút nốt nhạc
    ========================================================== */
 (function(){
   'use strict';
@@ -84,7 +84,7 @@
   <button id="music-toggle" aria-label="Bật/tắt trình phát nhạc">
     <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
   </button>
-  <div id="music-player" class="show" aria-label="Trình phát nhạc">
+  <div id="music-player" aria-label="Trình phát nhạc">
     <div class="mp-header">
       <div style="width:24px;flex-shrink:0"></div>
       <div class="mp-title-wrap">
@@ -393,7 +393,7 @@
     }
 
     if (wantResume && document.getElementById('loader') && document.getElementById('loader').classList.contains('done')) {
-        playSound();
+        playSong();
     }
   }
 

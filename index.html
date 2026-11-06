@@ -253,9 +253,9 @@ nav.pill{
 .hud-icon-btn:hover{background:rgba(255,255,255,.18);}
 .hud-icon-btn:active{transform:scale(.94);}
 
-/* Left Vertical Zoom Slider Rail (Mặc định ẩn, chỉ hiện trong Hero) */
+/* Left Vertical Zoom Slider Rail (Ẩn mặc định) */
 .left-zoom-rail{
-  position:absolute; /* Đổi thành absolute để cuộn theo trang */
+  position:absolute;
   left: 20px;
   top:50%;
   transform:translateY(-50%) translateX(-20px);
@@ -277,6 +277,7 @@ nav.pill{
   user-select:none;
   transition: opacity .3s ease, transform .3s ease, visibility .3s;
 }
+/* Hiển thị khi có class show */
 .left-zoom-rail.show {
   opacity: 1;
   visibility: visible;
@@ -284,7 +285,14 @@ nav.pill{
   transform:translateY(-50%) translateX(0);
 }
 
-/* Nút Ẩn/Hiện Thanh Zoom */
+.v-zoom-track{ position:relative; width:24px; height:148px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; }
+.v-zoom-line{ width:3px; height:100%; background:rgba(255,255,255,.18); border-radius:99px; position:relative; overflow:hidden; }
+.v-zoom-fill{ position:absolute; bottom:0; left:0; right:0; height:50%; background:#FFFFFF; border-radius:99px; }
+.v-zoom-thumb{ position:absolute; left:50%; bottom:50%; width:14px; height:14px; border-radius:50%; background:#FFFFFF; border:2px solid #0A0A0C; box-shadow:0 0 0 2px rgba(255,255,255,.35), 0 2px 8px rgba(0,0,0,.5); transform:translate(-50%, 50%); transition:transform .12s ease; }
+.v-zoom-track:hover .v-zoom-thumb, .v-zoom-track.dragging .v-zoom-thumb{ transform:translate(-50%, 50%) scale(1.2); }
+.v-zoom-lbl{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; color:#8A8D98; writing-mode:vertical-rl; transform:rotate(180deg); margin:2px 0; }
+
+/* Nút Ẩn/Hiện Thanh Zoom (Góc dưới bên trái) */
 #zoom-toggle {
   position:fixed;
   bottom:calc(24px + env(safe-area-inset-bottom,0px));
@@ -309,21 +317,23 @@ nav.pill{
 }
 #zoom-toggle:hover { transform:scale(1.1); background:rgba(50,50,50,.9); }
 #zoom-toggle:active { transform:scale(.95); }
-#zoom-toggle svg { width:20px; height:20px; fill:currentColor; }
+#zoom-toggle svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
-.v-zoom-track{ position:relative; width:24px; height:148px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; }
-.v-zoom-line{ width:3px; height:100%; background:rgba(255,255,255,.18); border-radius:99px; position:relative; overflow:hidden; }
-.v-zoom-fill{ position:absolute; bottom:0; left:0; right:0; height:50%; background:#FFFFFF; border-radius:99px; }
-.v-zoom-thumb{ position:absolute; left:50%; bottom:50%; width:14px; height:14px; border-radius:50%; background:#FFFFFF; border:2px solid #0A0A0C; box-shadow:0 0 0 2px rgba(255,255,255,.35), 0 2px 8px rgba(0,0,0,.5); transform:translate(-50%, 50%); transition:transform .12s ease; }
-.v-zoom-track:hover .v-zoom-thumb, .v-zoom-track.dragging .v-zoom-thumb{ transform:translate(-50%, 50%) scale(1.2); }
-.v-zoom-lbl{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; color:#8A8D98; writing-mode:vertical-rl; transform:rotate(180deg); margin:2px 0; }
+/* Ẩn thanh zoom và nút trên trang legal */
+body.legal-view #zoom-toggle,
+body.legal-view .left-zoom-rail {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 
 @media(max-width:1180px){
-  #hero .wrap{padding-left: 24px;} /* Không cần nhường chỗ nữa vì thanh zoom đã ẩn mặc định */
+  #hero .wrap{padding-left: 24px;}
 }
 @media(max-width:520px){
   .left-zoom-rail{left: 14px; padding:8px 5px; gap:8px;}
   .v-zoom-track{height:110px; width:20px;}
+  /* Đẩy nút zoom lên trên thanh bar mobile */
   #zoom-toggle { bottom: calc(80px + env(safe-area-inset-bottom,0px)); left: 14px; width: 44px; height: 44px; }
 }
 
@@ -411,8 +421,7 @@ body.legal-view { background:#EFEDE8; }
 body.legal-view nav.pill{ background:rgba(255,255,255,.95); }
 body.legal-view #hero-bg,
 body.legal-view #stage,
-body.legal-view #prog,
-body.legal-view #zoom-toggle {
+body.legal-view #prog {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -420,8 +429,7 @@ body.legal-view #zoom-toggle {
 }
 body:not(.legal-view) #hero-bg,
 body:not(.legal-view) #stage,
-body:not(.legal-view) #prog,
-body:not(.legal-view) #zoom-toggle {
+body:not(.legal-view) #prog {
   transition: opacity .35s ease, visibility 0s 0s;
 }
 
@@ -542,8 +550,8 @@ body:not(.legal-view) #zoom-toggle {
     </div>
   </div>
 
-  <!-- Vertical Left Zoom Control Bar (Mặc định ẩn) -->
-  <div class="left-zoom-rail hi" style="--d:.4s" aria-label="Thanh kéo phóng to thu nhỏ 3D">
+  <!-- Thanh Zoom (Mặc định ẩn) -->
+  <div class="left-zoom-rail" aria-label="Thanh kéo phóng to thu nhỏ 3D">
     <button type="button" class="hud-icon-btn" id="zoom-in-btn" title="Phóng to" aria-label="Phóng to">+</button>
     <div class="v-zoom-track" id="v-zoom-track" role="slider" tabindex="0" aria-label="Kéo lên xuống để Zoom" aria-valuemin="5" aria-valuemax="75" aria-valuenow="36">
       <div class="v-zoom-line">
@@ -568,7 +576,7 @@ body:not(.legal-view) #zoom-toggle {
         <button type="button" class="planet-btn" data-focus="saturn">Sao Thổ</button>
       </div>
       <div class="solar-zoom">
-        <span class="hint">Kéo không gian để xoay 360° · Kéo thanh bên trái để Zoom</span>
+        <span class="hint">Kéo không gian để xoay 360° · Bấm nút bánh răng để hiện thanh Zoom</span>
       </div>
     </div>
   </div>
@@ -733,55 +741,14 @@ body:not(.legal-view) #zoom-toggle {
   </span>
 </div></footer>
 
-<!-- Nút Ẩn/Hiện Thanh Zoom (Góc trái dưới) -->
+<!-- Nút Ẩn/Hiện Thanh Zoom (Góc dưới bên trái) -->
 <button id="zoom-toggle" aria-label="Bật/tắt thanh Zoom">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 </button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-  /* Subtle Monochrome UI Synth */
-  var audioCtx = null;
-  var soundEnabled = false;
-  var soundBtn = document.getElementById('sound-toggle');
-  var soundIcon = document.getElementById('sound-icon');
-
-  function playTone(freq, dur, vol){
-    if(!soundEnabled) return;
-    try{
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(audioCtx.state === 'suspended') audioCtx.resume();
-      var osc = audioCtx.createOscillator();
-      var gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(vol || 0.03, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (dur || 0.1));
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + (dur || 0.1));
-    }catch(e){}
-  }
-
-  if(soundBtn){
-    soundBtn.addEventListener('click', function(){
-      soundEnabled = !soundEnabled;
-      soundBtn.classList.toggle('active', soundEnabled);
-      if(soundIcon){
-        soundIcon.innerHTML = soundEnabled
-          ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>'
-          : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
-      }
-      if(soundEnabled) playTone(580, 0.12, 0.04);
-    });
-  }
-
-  document.addEventListener('click', function(e){
-    if(e.target.closest('button, a')) playTone(480, 0.08, 0.025);
-  });
-
   /* Toggle Zoom Rail */
   var zoomToggle = document.getElementById('zoom-toggle');
   var zoomRail = document.querySelector('.left-zoom-rail');
